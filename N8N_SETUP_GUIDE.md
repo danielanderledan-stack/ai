@@ -2,6 +2,15 @@
 
 This guide explains how to configure your n8n workflow (`n8n-workflow.json`) to work with the Railway streaming bridge.
 
+## ✅ Pre-Configured Settings
+
+The workflow has been **pre-configured** with:
+- **Railway URL:** `https://ai-production-b4df.up.railway.app/callback`
+- **Bearer token:** Removed from HTTP Request1
+- **Type field:** Added to both HTTP Request nodes (`"type": "content"`)
+
+**You can import and use the workflow as-is!** The only remaining step is adding a completion signal (see Step 4 below).
+
 ## Workflow Overview
 
 Your n8n workflow implements an intelligent routing system with 4 complexity levels:
@@ -52,82 +61,27 @@ User Message → Webhook → Edit Fields → Basic LLM Chain (Classifier)
    - Executes tasks in parallel or sequential order
    - **Streams results** back to client via callbacks
 
-## Critical Configuration Changes Needed
+## Configuration Status
 
-### 1. Update Railway App URL (REQUIRED)
+### ✅ Already Configured
 
-Both `HTTP Request1` and `HTTP Request2` nodes currently have placeholder URLs:
+The following have been **pre-configured** in the workflow file:
 
-**Current:**
+### 1. ✅ Railway App URL (DONE)
+
+Both `HTTP Request1` and `HTTP Request2` nodes have been updated with:
 ```
-https://your-railway-app.railway.app/callback
-```
-
-**What you need to do:**
-1. Deploy your streaming bridge to Railway
-2. Get your Railway app URL (e.g., `https://n8n-streaming-bridge-production.up.railway.app`)
-3. In n8n workflow editor, update **both** HTTP Request nodes:
-   - `HTTP Request1` (line 871 in JSON)
-   - `HTTP Request2` (line 902 in JSON)
-
-**Updated URL should be:**
-```
-https://YOUR-RAILWAY-APP.up.railway.app/callback
+https://ai-production-b4df.up.railway.app/callback
 ```
 
-### 2. Remove Bearer Authentication Header (REQUIRED)
+### 2. ✅ Bearer Authentication Header (DONE)
 
-`HTTP Request1` currently includes a Bearer token that must be removed.
+The Bearer token has been removed from `HTTP Request1`.
 
-**Current (HTTP Request1):**
-```json
-"headerParameters": {
-  "parameters": [
-    {
-      "name": "Content-Type",
-      "value": "application/json"
-    },
-    {
-      "name": "Bearer",
-      "value": "eyJhbGciOiJIUzI1NiIs..."
-    }
-  ]
-}
-```
+### 3. ✅ "type" Field Added to Callback Bodies (DONE)
 
-**What you need to do:**
-1. Open `HTTP Request1` node in n8n editor
-2. Go to "Headers" section
-3. **Delete** the "Bearer" header
-4. Keep only "Content-Type: application/json"
+Both HTTP Request nodes now include the `type` field:
 
-**After fix:**
-```json
-"headerParameters": {
-  "parameters": [
-    {
-      "name": "Content-Type",
-      "value": "application/json"
-    }
-  ]
-}
-```
-
-### 3. Add "type" Field to Callback Bodies (REQUIRED)
-
-Both HTTP Request nodes are missing the `type` field that tells the streaming bridge how to handle the response.
-
-**Current body:**
-```json
-{
-  "session_id": "{{$node['Webhook'].json.body.session_id}}",
-  "response": "{{ JSON.stringify($json.text) }}"
-}
-```
-
-**What you need to do:**
-
-For **HTTP Request1** (sends acknowledgment):
 ```json
 {
   "session_id": "{{$node['Webhook'].json.body.session_id}}",
@@ -136,16 +90,9 @@ For **HTTP Request1** (sends acknowledgment):
 }
 ```
 
-For **HTTP Request2** (sends task results):
-```json
-{
-  "session_id": "{{$node['Webhook'].json.body.session_id}}",
-  "response": "{{ JSON.stringify($json.text) }}",
-  "type": "content"
-}
-```
+## Remaining Configuration
 
-### 4. Add Completion Signal (REQUIRED)
+### 4. Add Completion Signal (OPTIONAL - Recommended)
 
 After sending the final content, you need to signal that streaming is complete.
 
@@ -153,7 +100,7 @@ After sending the final content, you need to signal that streaming is complete.
 
 **Node configuration:**
 - **Method:** POST
-- **URL:** `https://YOUR-RAILWAY-APP.up.railway.app/callback`
+- **URL:** `https://ai-production-b4df.up.railway.app/callback`
 - **Headers:**
   - Content-Type: `application/json`
 - **Body:**

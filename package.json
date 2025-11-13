@@ -1,0 +1,27 @@
+{
+  "name": "n8n-streaming-bridge",
+  "version": "1.0.0",
+  "description": "A streaming bridge application for n8n webhooks using Server-Sent Events",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "n8n",
+    "streaming",
+    "sse",
+    "webhook",
+    "bridge"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1"
+  }
+}

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>n8n Streaming Bridge Test Client</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #4F46E5;
+            color: white;
+            padding: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #EF4444;
+        }
+
+        .status-dot.connected {
+            background: #10B981;
+        }
+
+        .config {
+            padding: 20px;
+            background: #F9FAFB;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .config-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .config-row input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .config-row button {
+            padding: 8px 16px;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .config-row button:hover {
+            background: #4338CA;
+        }
+
+        .config-row button:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+        }
+
+        .messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #EEF2FF;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.assistant {
+            background: #F3F4F6;
+        }
+
+        .message.system {
+            background: #FEF3C7;
+            font-size: 12px;
+            max-width: 100%;
+            text-align: center;
+        }
+
+        .message.error {
+            background: #FEE2E2;
+            color: #991B1B;
+            max-width: 100%;
+        }
+
+        .message-role {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .message-content {
+            word-wrap: break-word;
+        }
+
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #E5E7EB;
+            background: white;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-row input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #D1D5DB;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .input-row button {
+            padding: 10px 20px;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .input-row button:hover {
+            background: #4338CA;
+        }
+
+        .input-row button:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+        }
+
+        .streaming {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>n8n Streaming Bridge Test Client</h1>
+            <div class="status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Disconnected</span>
+                <span id="sessionInfo"></span>
+            </div>
+        </div>
+
+        <div class="config">
+            <div class="config-row">
+                <input type="text" id="serverUrl" placeholder="Server URL" value="http://localhost:3000">
+                <input type="text" id="userId" placeholder="User ID" value="test-user">
+                <input type="email" id="email" placeholder="Email" value="test@example.com">
+                <button id="connectBtn" onclick="connect()">Connect</button>
+            </div>
+        </div>
+
+        <div class="messages" id="messages"></div>
+
+        <div class="input-area">
+            <div class="input-row">
+                <input type="text" id="messageInput" placeholder="Type your message..." disabled>
+                <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sessionId = null;
+        let eventSource = null;
+        let messageHistory = [];
+        let currentStreamingMessage = null;
+
+        function addMessage(role, content, isStreaming = false) {
+            const messagesDiv = document.getElementById('messages');
+
+            if (isStreaming && currentStreamingMessage) {
+                // Update existing streaming message
+                currentStreamingMessage.querySelector('.message-content').textContent = content;
+            } else {
+                // Create new message
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${role}`;
+                if (isStreaming) {
+                    messageDiv.classList.add('streaming');
+                    currentStreamingMessage = messageDiv;
+                }
+
+                messageDiv.innerHTML = `
+                    <div class="message-role">${role}</div>
+                    <div class="message-content">${content}</div>
+                `;
+
+                messagesDiv.appendChild(messageDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                if (role !== 'system' && role !== 'error') {
+                    messageHistory.push({ role, content });
+                }
+            }
+        }
+
+        function updateStatus(connected, text, sessionId = null) {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const sessionInfo = document.getElementById('sessionInfo');
+            const messageInput = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const connectBtn = document.getElementById('connectBtn');
+
+            if (connected) {
+                statusDot.classList.add('connected');
+                statusText.textContent = text;
+                sessionInfo.textContent = sessionId ? `Session: ${sessionId}` : '';
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                connectBtn.textContent = 'Disconnect';
+            } else {
+                statusDot.classList.remove('connected');
+                statusText.textContent = text;
+                sessionInfo.textContent = '';
+                messageInput.disabled = true;
+                sendBtn.disabled = true;
+                connectBtn.textContent = 'Connect';
+            }
+        }
+
+        function connect() {
+            if (eventSource) {
+                // Disconnect
+                eventSource.close();
+                eventSource = null;
+                sessionId = null;
+                updateStatus(false, 'Disconnected');
+                addMessage('system', 'Disconnected from server');
+                return;
+            }
+
+            const serverUrl = document.getElementById('serverUrl').value;
+            const userId = document.getElementById('userId').value;
+
+            addMessage('system', 'Connecting to server...');
+
+            eventSource = new EventSource(`${serverUrl}/stream?userId=${userId}`);
+
+            eventSource.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+
+                    switch (data.type) {
+                        case 'session':
+                            sessionId = data.sessionId;
+                            updateStatus(true, 'Connected', sessionId);
+                            addMessage('system', `Connected! Session ID: ${sessionId}`);
+                            break;
+
+                        case 'content':
+                            if (!currentStreamingMessage) {
+                                addMessage('assistant', data.content, true);
+                            } else {
+                                const currentContent = currentStreamingMessage.querySelector('.message-content').textContent;
+                                addMessage('assistant', currentContent + data.content, true);
+                            }
+                            break;
+
+                        case 'done':
+                            if (currentStreamingMessage) {
+                                currentStreamingMessage.classList.remove('streaming');
+                                const finalContent = currentStreamingMessage.querySelector('.message-content').textContent;
+                                messageHistory.push({ role: 'assistant', content: finalContent });
+                                currentStreamingMessage = null;
+                            }
+                            addMessage('system', 'Stream complete');
+                            break;
+
+                        case 'error':
+                            addMessage('error', `Error: ${data.message}`);
+                            if (currentStreamingMessage) {
+                                currentStreamingMessage.classList.remove('streaming');
+                                currentStreamingMessage = null;
+                            }
+                            break;
+
+                        case 'timeout':
+                            addMessage('system', 'Connection timeout');
+                            eventSource.close();
+                            eventSource = null;
+                            sessionId = null;
+                            updateStatus(false, 'Disconnected');
+                            break;
+
+                        case 'shutdown':
+                            addMessage('system', 'Server shutting down');
+                            eventSource.close();
+                            eventSource = null;
+                            sessionId = null;
+                            updateStatus(false, 'Disconnected');
+                            break;
+                    }
+                } catch (error) {
+                    console.error('Error parsing SSE data:', error);
+                    addMessage('error', `Parse error: ${error.message}`);
+                }
+            };
+
+            eventSource.onerror = (error) => {
+                console.error('SSE connection error:', error);
+                addMessage('error', 'Connection error occurred');
+                eventSource.close();
+                eventSource = null;
+                sessionId = null;
+                updateStatus(false, 'Disconnected');
+            };
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+
+            if (!message || !sessionId) return;
+
+            const serverUrl = document.getElementById('serverUrl').value;
+            const email = document.getElementById('email').value;
+
+            addMessage('user', message);
+            messageInput.value = '';
+
+            try {
+                const response = await fetch(`${serverUrl}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        sessionId,
+                        email,
+                        message,
+                        history: messageHistory
+                    }),
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    addMessage('error', `Failed to send: ${error.error}`);
+                }
+            } catch (error) {
+                addMessage('error', `Network error: ${error.message}`);
+            }
+        }
+
+        // Enable sending message with Enter key
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initial message
+        addMessage('system', 'Enter server URL and click Connect to start');
+    </script>
+</body>
+</html>

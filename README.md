@@ -459,6 +459,34 @@ function ChatComponent() {
 
 ## n8n Integration
 
+### Included Workflow
+
+This repository includes a pre-configured n8n workflow (`n8n-workflow.json`) that implements an intelligent routing system with 4 complexity levels:
+
+- **L (Low)** - Simple acknowledgments
+- **M (Medium)** - Standard responses
+- **H (High)** - Complex responses
+- **T (Task)** - Multi-step workflow orchestration with streaming
+
+**📖 See the complete setup guide:** [N8N_SETUP_GUIDE.md](./N8N_SETUP_GUIDE.md)
+
+### Quick Setup
+
+1. **Import the workflow** into your n8n instance:
+   - Download `n8n-workflow.json`
+   - In n8n: Settings → Import from File
+
+2. **Update configuration** (see [N8N_SETUP_GUIDE.md](./N8N_SETUP_GUIDE.md) for details):
+   - Replace `https://your-railway-app.railway.app/callback` with your actual Railway URL
+   - Remove Bearer authentication header from HTTP Request1
+   - Add `"type": "content"` field to callback bodies
+   - Add completion signal node
+
+3. **Set environment variable** in Railway:
+   ```bash
+   railway variables set N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/YOUR-WEBHOOK-ID
+   ```
+
 ### Webhook Configuration
 
 Your n8n workflow should:
@@ -476,30 +504,21 @@ Your n8n workflow should:
 
 2. **Process the message** using your AI/LLM workflow
 
-3. **Send responses** back to the callback URL as they're generated:
+3. **Send responses** back to the callback URL:
 
 **For each content chunk:**
-```javascript
-// HTTP Request Node configuration
-POST {{$node["Webhook"].json["callback_url"]}}
-Headers:
-  Content-Type: application/json
-Body:
+```json
 {
-  "session_id": "{{$node["Webhook"].json["session_id"]}}",
-  "response": "{{$json.chunk}}",
+  "session_id": "{{$node['Webhook'].json.body.session_id}}",
+  "response": "Content to stream",
   "type": "content"
 }
 ```
 
 **When streaming is complete:**
-```javascript
-POST {{$node["Webhook"].json["callback_url"]}}
-Headers:
-  Content-Type: application/json
-Body:
+```json
 {
-  "session_id": "{{$node["Webhook"].json["session_id"]}}",
+  "session_id": "{{$node['Webhook'].json.body.session_id}}",
   "response": "done",
   "type": "complete"
 }
@@ -512,6 +531,7 @@ Body:
 - **Always include session_id** in callbacks
 - **Use the callback_url** provided in the webhook payload
 - **Send "done" signal** when streaming is complete
+- **See [N8N_SETUP_GUIDE.md](./N8N_SETUP_GUIDE.md)** for detailed configuration instructions
 
 ## Security Features
 

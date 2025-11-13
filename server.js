@@ -382,10 +382,11 @@ app.use((req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server - Listen on 0.0.0.0 for Railway compatibility
+app.listen(PORT, '0.0.0.0', () => {
   log(`n8n Streaming Bridge Server started`, {
     port: PORT,
+    host: '0.0.0.0',
     environment: process.env.NODE_ENV || 'development',
     n8nConfigured: !!N8N_WEBHOOK_URL,
     streamTimeout: `${STREAM_TIMEOUT_MS}ms`

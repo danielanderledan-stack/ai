@@ -9,9 +9,62 @@ const PORT = process.env.PORT || 3000;
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
 const STREAM_TIMEOUT_MS = process.env.STREAM_TIMEOUT_MS || 120000; // 2 minutes default
 
-// Middleware
-app.use(cors());
+// CORS Configuration - Allow Figma site and localhost
+app.use(cors({
+  origin: ['https://pod-chroma-42458729.figma.site', 'http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
+}));
+
 app.use(express.json());
+
+// Simple rate limiting store
+const rateLimitStore = new Map();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 60; // 60 requests per minute per IP
+
+// Rate limiting middleware
+const rateLimit = (req, res, next) => {
+  const ip = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+
+  if (!rateLimitStore.has(ip)) {
+    rateLimitStore.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return next();
+  }
+
+  const record = rateLimitStore.get(ip);
+
+  if (now > record.resetTime) {
+    record.count = 1;
+    record.resetTime = now + RATE_LIMIT_WINDOW;
+    return next();
+  }
+
+  if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
+    log(`Rate limit exceeded`, { ip });
+    return res.status(429).json({
+      error: 'Too many requests. Please try again later.'
+    });
+  }
+
+  record.count++;
+  next();
+};
+
+// Apply rate limiting to all routes
+app.use(rateLimit);
+
+// Clean up rate limit store periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of rateLimitStore.entries()) {
+    if (now > record.resetTime) {
+      rateLimitStore.delete(ip);
+    }
+  }
+}, RATE_LIMIT_WINDOW);
 
 // In-memory store for active SSE connections
 const activeConnections = new Map();
@@ -60,8 +113,14 @@ app.get('/health', (req, res) => {
 app.get('/stream', (req, res) => {
   const userId = req.query.userId || 'anonymous';
   const sessionId = generateSessionId(userId);
+  const origin = req.get('origin') || req.get('referer') || 'unknown';
 
-  log(`New SSE connection request`, { userId, sessionId });
+  log(`New SSE connection request`, {
+    userId,
+    sessionId,
+    origin,
+    userAgent: req.get('user-agent')
+  });
 
   // Set SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
@@ -117,8 +176,16 @@ app.get('/stream', (req, res) => {
 // Chat Endpoint - Forward messages to n8n
 app.post('/chat', async (req, res) => {
   const { message, history, email, sessionId } = req.body;
+  const origin = req.get('origin') || req.get('referer') || 'unknown';
 
-  log(`Chat request received`, { email, sessionId, messageLength: message?.length });
+  log(`Chat request received`, {
+    email,
+    sessionId,
+    messageLength: message?.length,
+    origin,
+    hasHistory: !!history,
+    historyLength: history?.length || 0
+  });
 
   // Validate required fields
   if (!message || !sessionId || !email) {
@@ -198,9 +265,8 @@ app.post('/chat', async (req, res) => {
     const connection = activeConnections.get(sessionId);
     if (connection) {
       connection.response.write(`data: ${JSON.stringify({
-        type: 'error',
-        message: 'Failed to process request',
-        error: error.message
+        error: true,
+        message: 'Failed to process request: ' + error.message
       })}\n\n`);
     }
 
@@ -242,11 +308,8 @@ app.post('/callback', (req, res) => {
   try {
     // Handle different response types
     if (type === 'complete' || response === 'done' || response === '[DONE]') {
-      // Send completion signal
-      connection.response.write(`data: ${JSON.stringify({
-        type: 'done',
-        message: 'Stream complete'
-      })}\n\n`);
+      // Send completion signal in simplified format
+      connection.response.write(`data: ${JSON.stringify({ done: true })}\n\n`);
 
       log(`Stream completed`, { session_id });
 
@@ -255,11 +318,8 @@ app.post('/callback', (req, res) => {
       cleanupSession(session_id);
 
     } else if (response) {
-      // Stream content to client
-      connection.response.write(`data: ${JSON.stringify({
-        type: 'content',
-        content: response
-      })}\n\n`);
+      // Stream content to client in simplified format
+      connection.response.write(`data: ${JSON.stringify({ content: response })}\n\n`);
 
       log(`Content streamed`, {
         session_id,
@@ -270,14 +330,28 @@ app.post('/callback', (req, res) => {
     // Acknowledge receipt to n8n
     res.json({
       success: true,
-      message: 'Callback processed'
+      message: 'Callback processed',
+      session_id
     });
 
   } catch (error) {
     log(`Error processing callback`, {
       session_id,
-      error: error.message
+      error: error.message,
+      stack: error.stack
     });
+
+    // Try to send error to client if connection still exists
+    try {
+      if (connection && connection.response) {
+        connection.response.write(`data: ${JSON.stringify({
+          error: true,
+          message: error.message
+        })}\n\n`);
+      }
+    } catch (writeError) {
+      log(`Failed to write error to client`, { writeError: writeError.message });
+    }
 
     res.status(500).json({
       error: 'Failed to process callback',

@@ -9,11 +9,13 @@ This streaming bridge allows you to:
 - Forward chat messages to n8n workflows
 - Stream responses from n8n back to clients in real-time
 - Manage multiple concurrent streaming sessions
+- Built-in rate limiting for security
+- CORS support for Figma sites and localhost
 
 ## Architecture
 
 ```
-Frontend Client <--SSE--> Streaming Bridge <--HTTP--> n8n Webhook
+Figma Frontend <--SSE--> Railway Bridge <--HTTP--> n8n Webhook
 ```
 
 1. Frontend connects to `/stream` endpoint and receives a session ID
@@ -22,47 +24,75 @@ Frontend Client <--SSE--> Streaming Bridge <--HTTP--> n8n Webhook
 4. n8n processes the request and sends chunks back to `/callback` endpoint
 5. Bridge streams each chunk to the frontend via the SSE connection
 
-## Installation
+## Quick Start
 
-### Prerequisites
+### Local Development
 
-- Node.js 18 or higher
-- npm or yarn
-- An n8n instance with a webhook configured
-
-### Setup
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd n8n-streaming-bridge
-```
-
-2. Install dependencies:
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Create a `.env` file:
+2. Create a `.env` file:
 ```bash
 cp .env.example .env
 ```
 
-4. Configure your environment variables in `.env`:
+3. Configure your environment variables in `.env`:
 ```env
 PORT=3000
 N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/your-webhook-id
 STREAM_TIMEOUT_MS=120000
 ```
 
-5. Start the server:
+4. Start the server:
 ```bash
-# Production
 npm start
-
-# Development (with auto-reload)
-npm run dev
 ```
+
+## Railway Deployment
+
+### Setup Steps
+
+1. **Install Railway CLI:**
+```bash
+npm install -g @railway/cli
+```
+
+2. **Login to Railway:**
+```bash
+railway login
+```
+
+3. **Initialize project:**
+```bash
+railway init
+```
+
+4. **Set environment variables:**
+```bash
+railway variables set N8N_WEBHOOK_URL=<your-n8n-webhook-url>
+railway variables set PORT=3000
+railway variables set STREAM_TIMEOUT_MS=120000
+```
+
+5. **Deploy:**
+```bash
+railway up
+```
+
+6. **Get your deployment URL:**
+```bash
+railway domain
+```
+
+### Railway Configuration
+
+The application is configured to work with:
+- **Frontend Origin:** `https://pod-chroma-42458729.figma.site`
+- **CORS:** Enabled for Figma site and localhost
+- **Rate Limiting:** 60 requests per minute per IP
+- **Session Timeout:** 2 minutes (configurable)
 
 ## API Documentation
 
@@ -99,43 +129,22 @@ Establish an SSE connection for receiving real-time updates.
 
 1. Session event (immediately upon connection):
 ```json
-{
-  "type": "session",
-  "sessionId": "user123-1234567890-abc123"
-}
+{ "type": "session", "sessionId": "user123-1234567890-abc123" }
 ```
 
-2. Content events (as responses arrive):
+2. Content events (as responses arrive from n8n):
 ```json
-{
-  "type": "content",
-  "content": "Streamed response text"
-}
+{ "content": "Streamed response text" }
 ```
 
 3. Done event (when streaming completes):
 ```json
-{
-  "type": "done",
-  "message": "Stream complete"
-}
+{ "done": true }
 ```
 
 4. Error event (if errors occur):
 ```json
-{
-  "type": "error",
-  "message": "Error description",
-  "error": "Error details"
-}
-```
-
-5. Timeout event (if connection exceeds timeout):
-```json
-{
-  "type": "timeout",
-  "message": "Connection timeout"
-}
+{ "error": true, "message": "Error description" }
 ```
 
 ### Chat Endpoint
@@ -163,6 +172,12 @@ Send a message to be processed by n8n.
 }
 ```
 
+**Required Fields:**
+- `sessionId` - Active session ID from `/stream` connection
+- `email` - User email for identification
+- `message` - User's message
+- `history` - Conversation history (can be empty array)
+
 **Response:**
 ```json
 {
@@ -172,21 +187,13 @@ Send a message to be processed by n8n.
 }
 ```
 
-**Error Response:**
-```json
-{
-  "error": "Error description",
-  "details": "Additional error details"
-}
-```
-
 ### Callback Endpoint
 
 Internal endpoint used by n8n to send responses back. This endpoint is called by the n8n workflow, not by frontend clients.
 
 **Endpoint:** `POST /callback`
 
-**Request Body:**
+**Request Body (for content):**
 ```json
 {
   "session_id": "user123-1234567890-abc123",
@@ -195,7 +202,7 @@ Internal endpoint used by n8n to send responses back. This endpoint is called by
 }
 ```
 
-For completion:
+**Request Body (for completion):**
 ```json
 {
   "session_id": "user123-1234567890-abc123",
@@ -204,9 +211,18 @@ For completion:
 }
 ```
 
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Callback processed",
+  "session_id": "user123-1234567890-abc123"
+}
+```
+
 ## Frontend Integration
 
-### JavaScript/TypeScript Example
+### JavaScript/TypeScript Client
 
 ```javascript
 class N8nStreamingClient {
@@ -225,29 +241,29 @@ class N8nStreamingClient {
         try {
           const data = JSON.parse(event.data);
 
-          switch (data.type) {
-            case 'session':
-              this.sessionId = data.sessionId;
-              console.log('Connected with session:', this.sessionId);
-              resolve(this.sessionId);
-              break;
-
-            case 'content':
-              this.onContent(data.content);
-              break;
-
-            case 'done':
-              this.onComplete();
-              break;
-
-            case 'error':
-              this.onError(data.message);
-              break;
-
-            case 'timeout':
-              this.onTimeout();
-              break;
+          // Handle session initialization
+          if (data.type === 'session') {
+            this.sessionId = data.sessionId;
+            console.log('Connected with session:', this.sessionId);
+            resolve(this.sessionId);
+            return;
           }
+
+          // Handle content streaming
+          if (data.content) {
+            this.onContent(data.content);
+          }
+
+          // Handle completion
+          if (data.done) {
+            this.onComplete();
+          }
+
+          // Handle errors
+          if (data.error) {
+            this.onError(data.message);
+          }
+
         } catch (error) {
           console.error('Error parsing SSE data:', error);
         }
@@ -308,16 +324,12 @@ class N8nStreamingClient {
   onError(error) {
     console.error('Stream error:', error);
   }
-
-  onTimeout() {
-    console.log('Stream timeout');
-  }
 }
 
-// Usage example
-const client = new N8nStreamingClient('http://localhost:3000');
+// Usage example for Figma site
+const client = new N8nStreamingClient('https://your-railway-app.up.railway.app');
 
-// Connect and handle streaming responses
+// Set up event handlers
 client.onContent = (content) => {
   // Append content to your UI
   document.getElementById('response').textContent += content;
@@ -327,79 +339,93 @@ client.onComplete = () => {
   console.log('Response complete!');
 };
 
-// Connect to stream
-await client.connect('user123');
+client.onError = (error) => {
+  console.error('Error:', error);
+};
 
-// Send a message
-await client.sendMessage(
-  'user@example.com',
-  'What is the weather like?',
-  []
-);
+// Connect and send a message
+async function chat() {
+  await client.connect('user123');
+  await client.sendMessage(
+    'user@example.com',
+    'What is the weather like?',
+    []
+  );
+}
 
-// Later, disconnect
-// client.disconnect();
+chat();
 ```
 
-### React Example
+### React Hook Example
 
 ```javascript
 import { useState, useEffect, useRef } from 'react';
 
-function ChatComponent() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
+function useChatStream(baseUrl) {
   const [isConnected, setIsConnected] = useState(false);
-  const [currentResponse, setCurrentResponse] = useState('');
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [messages, setMessages] = useState([]);
   const clientRef = useRef(null);
 
   useEffect(() => {
-    // Initialize client
-    const client = new N8nStreamingClient('http://localhost:3000');
+    const client = new N8nStreamingClient(baseUrl);
 
     client.onContent = (content) => {
-      setCurrentResponse(prev => prev + content);
+      setCurrentMessage(prev => prev + content);
     };
 
     client.onComplete = () => {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: currentResponse
+        content: currentMessage
       }]);
-      setCurrentResponse('');
+      setCurrentMessage('');
     };
 
     client.onError = (error) => {
       console.error('Stream error:', error);
     };
 
-    // Connect
     client.connect('user123').then(() => {
       setIsConnected(true);
       clientRef.current = client;
     });
 
-    // Cleanup on unmount
     return () => {
       client.disconnect();
     };
-  }, []);
+  }, [baseUrl]);
 
-  const handleSend = async () => {
-    if (!input.trim() || !isConnected) return;
+  const sendMessage = async (email, message) => {
+    if (!clientRef.current || !isConnected) {
+      throw new Error('Not connected');
+    }
 
-    const userMessage = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    setMessages(prev => [...prev, { role: 'user', content: message }]);
 
-    try {
-      await clientRef.current.sendMessage(
-        'user@example.com',
-        input,
-        messages
-      );
-    } catch (error) {
-      console.error('Failed to send message:', error);
+    await clientRef.current.sendMessage(email, message, messages);
+  };
+
+  return {
+    isConnected,
+    currentMessage,
+    messages,
+    sendMessage
+  };
+}
+
+// Usage in component
+function ChatComponent() {
+  const { isConnected, currentMessage, messages, sendMessage } = useChatStream(
+    'https://your-railway-app.up.railway.app'
+  );
+
+  const [input, setInput] = useState('');
+
+  const handleSend = () => {
+    if (input.trim()) {
+      sendMessage('user@example.com', input);
+      setInput('');
     }
   };
 
@@ -411,9 +437,9 @@ function ChatComponent() {
             {msg.content}
           </div>
         ))}
-        {currentResponse && (
+        {currentMessage && (
           <div className="assistant streaming">
-            {currentResponse}
+            {currentMessage}
           </div>
         )}
       </div>
@@ -421,10 +447,8 @@ function ChatComponent() {
       <input
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        onKeyPress={(e) => e.key === 'Enter' && handleSend()}
         disabled={!isConnected}
       />
-
       <button onClick={handleSend} disabled={!isConnected}>
         Send
       </button>
@@ -433,168 +457,199 @@ function ChatComponent() {
 }
 ```
 
-## Deployment
-
-### Railway
-
-1. Install Railway CLI:
-```bash
-npm install -g @railway/cli
-```
-
-2. Login to Railway:
-```bash
-railway login
-```
-
-3. Initialize project:
-```bash
-railway init
-```
-
-4. Add environment variables:
-```bash
-railway variables set N8N_WEBHOOK_URL=<your-n8n-webhook-url>
-railway variables set PORT=3000
-```
-
-5. Deploy:
-```bash
-railway up
-```
-
-### Docker
-
-```dockerfile
-FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY . .
-
-EXPOSE 3000
-
-CMD ["node", "server.js"]
-```
-
-Build and run:
-```bash
-docker build -t n8n-streaming-bridge .
-docker run -p 3000:3000 \
-  -e N8N_WEBHOOK_URL=<your-webhook-url> \
-  n8n-streaming-bridge
-```
-
-## Testing
-
-### Manual Testing
-
-1. Start the server:
-```bash
-npm start
-```
-
-2. Test SSE connection:
-```bash
-curl -N http://localhost:3000/stream?userId=test
-```
-
-3. Send a test message (in another terminal):
-```bash
-curl -X POST http://localhost:3000/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "sessionId": "<session-id-from-step-2>",
-    "email": "test@example.com",
-    "message": "Hello",
-    "history": []
-  }'
-```
-
-4. Simulate n8n callback:
-```bash
-curl -X POST http://localhost:3000/callback \
-  -H "Content-Type: application/json" \
-  -d '{
-    "session_id": "<session-id>",
-    "response": "Test response",
-    "type": "content"
-  }'
-```
-
 ## n8n Integration
 
-The streaming bridge is designed to work with your existing n8n workflow without modifications. Your n8n workflow should:
+### Webhook Configuration
 
-1. Receive webhook requests with this structure:
+Your n8n workflow should:
+
+1. **Receive webhook POST requests** with this structure:
 ```json
 {
   "email": "user@example.com",
   "chat": "User's message",
-  "chat_context": "Previous conversation context",
-  "session_id": "unique-session-id",
-  "callback_url": "https://your-bridge.com/callback"
+  "chat_context": "role: message\nrole: message...",
+  "session_id": "user123-1234567890-abc123",
+  "callback_url": "https://your-railway-app.up.railway.app/callback"
 }
 ```
 
-2. Send responses back to the `callback_url` in chunks:
-```json
+2. **Process the message** using your AI/LLM workflow
+
+3. **Send responses** back to the callback URL as they're generated:
+
+**For each content chunk:**
+```javascript
+// HTTP Request Node configuration
+POST {{$node["Webhook"].json["callback_url"]}}
+Headers:
+  Content-Type: application/json
+Body:
 {
-  "session_id": "unique-session-id",
-  "response": "Chunk of text to stream",
+  "session_id": "{{$node["Webhook"].json["session_id"]}}",
+  "response": "{{$json.chunk}}",
   "type": "content"
 }
 ```
 
-3. Send a completion signal when done:
-```json
+**When streaming is complete:**
+```javascript
+POST {{$node["Webhook"].json["callback_url"]}}
+Headers:
+  Content-Type: application/json
+Body:
 {
-  "session_id": "unique-session-id",
+  "session_id": "{{$node["Webhook"].json["session_id"]}}",
   "response": "done",
   "type": "complete"
 }
 ```
 
-## Configuration
+### Important Notes for n8n
 
-### Environment Variables
+- **No Authorization headers needed** - The Railway app doesn't require authentication tokens
+- **Keep Content-Type**: `application/json`
+- **Always include session_id** in callbacks
+- **Use the callback_url** provided in the webhook payload
+- **Send "done" signal** when streaming is complete
 
-- `PORT`: Server port (default: 3000)
-- `N8N_WEBHOOK_URL`: Your n8n webhook endpoint (required)
-- `SUPABASE_SERVICE_ROLE`: Optional Supabase service role key
-- `STREAM_TIMEOUT_MS`: SSE connection timeout in milliseconds (default: 120000 = 2 minutes)
+## Security Features
+
+### CORS Configuration
+
+The application is configured to accept requests from:
+- `https://pod-chroma-42458729.figma.site` (Production Figma site)
+- `http://localhost:3000` (Local development)
+- `http://127.0.0.1:3000` (Local development)
+
+To add more origins, update `server.js:14`:
+```javascript
+app.use(cors({
+  origin: [
+    'https://pod-chroma-42458729.figma.site',
+    'http://localhost:3000',
+    'https://your-other-domain.com'  // Add here
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
+}));
+```
+
+### Rate Limiting
+
+Built-in rate limiting:
+- **Default:** 60 requests per minute per IP
+- **Window:** 60 seconds
+- **Response:** 429 Too Many Requests
+
+Configure in environment variables:
+```env
+RATE_LIMIT_MAX_REQUESTS=60
+RATE_LIMIT_WINDOW=60000
+```
 
 ### Session Management
 
-- Sessions are automatically cleaned up after the timeout period
-- Sessions are removed when the stream completes
-- Sessions are removed when clients disconnect
-- Each session has a unique ID in the format: `userId-timestamp-randomChars`
+- Sessions expire after 2 minutes (configurable via `STREAM_TIMEOUT_MS`)
+- Automatic cleanup on disconnect
+- Keepalive every 30 seconds
+- Session ID format: `userId-timestamp-randomChars`
+
+## Testing
+
+### Manual Testing
+
+1. **Start the server:**
+```bash
+npm start
+```
+
+2. **Test health endpoint:**
+```bash
+curl http://localhost:3000/health
+```
+
+3. **Test SSE connection:**
+```bash
+curl -N http://localhost:3000/stream?userId=test
+```
+
+4. **Open test client:**
+```bash
+# Open test-client.html in your browser
+```
+
+### Using the Test Client
+
+The included `test-client.html` provides a UI for testing:
+1. Open `test-client.html` in a browser
+2. Enter server URL (e.g., `http://localhost:3000`)
+3. Click "Connect" to establish SSE connection
+4. Enter messages and test the flow
 
 ## Troubleshooting
 
-### Connection Issues
+### CORS Issues
 
-If SSE connections fail:
-- Check CORS configuration
-- Verify firewall/proxy settings allow SSE
-- Ensure `X-Accel-Buffering` is set to `no` for nginx
+If you see CORS errors from your Figma site:
+1. Verify your Figma site URL is in the CORS origin list
+2. Check that credentials are enabled
+3. Ensure your Railway deployment has the correct URL
 
-### Timeout Issues
+### Connection Timeouts
 
-If connections timeout prematurely:
-- Increase `STREAM_TIMEOUT_MS` in your `.env`
-- Check that keepalive messages are being sent/received
+If connections timeout:
+- Increase `STREAM_TIMEOUT_MS` in environment variables
+- Check network/proxy settings
+- Verify keepalive messages are working
 
 ### n8n Integration Issues
 
-If messages aren't reaching n8n:
-- Verify `N8N_WEBHOOK_URL` is correct
-- Check n8n webhook logs
-- Ensure the callback URL is accessible from n8n
+If n8n callbacks fail:
+1. Check that `callback_url` is accessible from n8n
+2. Verify `session_id` is being passed correctly
+3. Check n8n HTTP Request node headers (should NOT have Authorization)
+4. Review Railway app logs for callback errors
+
+### Rate Limiting
+
+If you hit rate limits:
+- Increase `RATE_LIMIT_MAX_REQUESTS`
+- Adjust `RATE_LIMIT_WINDOW`
+- Consider implementing API keys for trusted clients
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PORT` | No | 3000 | Server port |
+| `N8N_WEBHOOK_URL` | Yes | - | n8n webhook endpoint URL |
+| `STREAM_TIMEOUT_MS` | No | 120000 | SSE connection timeout (2 minutes) |
+| `RATE_LIMIT_MAX_REQUESTS` | No | 60 | Max requests per window |
+| `RATE_LIMIT_WINDOW` | No | 60000 | Rate limit window in ms |
+
+## Architecture Details
+
+### Session Flow
+
+1. Client connects to `/stream`
+2. Server generates unique session ID
+3. Session stored in memory with response stream
+4. Client receives session ID via SSE
+5. Client sends chat messages with session ID
+6. Server validates session exists
+7. Message forwarded to n8n
+8. n8n calls back with chunks
+9. Chunks streamed to client via SSE
+10. Session cleaned up on completion or timeout
+
+### Memory Management
+
+- Active connections stored in Map
+- Automatic cleanup on disconnect
+- Timeout-based session expiry
+- Rate limit store cleaned every minute
 
 ## License
 

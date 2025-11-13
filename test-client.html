@@ -298,56 +298,47 @@
                 try {
                     const data = JSON.parse(event.data);
 
-                    switch (data.type) {
-                        case 'session':
-                            sessionId = data.sessionId;
-                            updateStatus(true, 'Connected', sessionId);
-                            addMessage('system', `Connected! Session ID: ${sessionId}`);
-                            break;
-
-                        case 'content':
-                            if (!currentStreamingMessage) {
-                                addMessage('assistant', data.content, true);
-                            } else {
-                                const currentContent = currentStreamingMessage.querySelector('.message-content').textContent;
-                                addMessage('assistant', currentContent + data.content, true);
-                            }
-                            break;
-
-                        case 'done':
-                            if (currentStreamingMessage) {
-                                currentStreamingMessage.classList.remove('streaming');
-                                const finalContent = currentStreamingMessage.querySelector('.message-content').textContent;
-                                messageHistory.push({ role: 'assistant', content: finalContent });
-                                currentStreamingMessage = null;
-                            }
-                            addMessage('system', 'Stream complete');
-                            break;
-
-                        case 'error':
-                            addMessage('error', `Error: ${data.message}`);
-                            if (currentStreamingMessage) {
-                                currentStreamingMessage.classList.remove('streaming');
-                                currentStreamingMessage = null;
-                            }
-                            break;
-
-                        case 'timeout':
-                            addMessage('system', 'Connection timeout');
-                            eventSource.close();
-                            eventSource = null;
-                            sessionId = null;
-                            updateStatus(false, 'Disconnected');
-                            break;
-
-                        case 'shutdown':
-                            addMessage('system', 'Server shutting down');
-                            eventSource.close();
-                            eventSource = null;
-                            sessionId = null;
-                            updateStatus(false, 'Disconnected');
-                            break;
+                    // Handle session initialization (has type field)
+                    if (data.type === 'session') {
+                        sessionId = data.sessionId;
+                        updateStatus(true, 'Connected', sessionId);
+                        addMessage('system', `Connected! Session ID: ${sessionId}`);
+                        return;
                     }
+
+                    // Handle content streaming (simplified format: {content: "..."})
+                    if (data.content !== undefined) {
+                        if (!currentStreamingMessage) {
+                            addMessage('assistant', data.content, true);
+                        } else {
+                            const currentContent = currentStreamingMessage.querySelector('.message-content').textContent;
+                            addMessage('assistant', currentContent + data.content, true);
+                        }
+                        return;
+                    }
+
+                    // Handle completion (simplified format: {done: true})
+                    if (data.done) {
+                        if (currentStreamingMessage) {
+                            currentStreamingMessage.classList.remove('streaming');
+                            const finalContent = currentStreamingMessage.querySelector('.message-content').textContent;
+                            messageHistory.push({ role: 'assistant', content: finalContent });
+                            currentStreamingMessage = null;
+                        }
+                        addMessage('system', 'Stream complete');
+                        return;
+                    }
+
+                    // Handle errors (simplified format: {error: true, message: "..."})
+                    if (data.error) {
+                        addMessage('error', `Error: ${data.message}`);
+                        if (currentStreamingMessage) {
+                            currentStreamingMessage.classList.remove('streaming');
+                            currentStreamingMessage = null;
+                        }
+                        return;
+                    }
+
                 } catch (error) {
                     console.error('Error parsing SSE data:', error);
                     addMessage('error', `Parse error: ${error.message}`);

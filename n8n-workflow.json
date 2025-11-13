@@ -868,7 +868,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "= https://ai-production-b4df.up.railway.app/callback",
+        "url": "=https://ai-production-b4df.up.railway.app/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -880,7 +880,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "= {\n     \"session_id\": \"{{$node['Webhook'].json.body.session_id}}\",\n     \"response\": \"{{ JSON.stringify($json.text) }}\",\n     \"type\": \"content\"\n   }",
+        "jsonBody": "={\n  \"session_id\": \"{{$node['Webhook'].json.body.session_id}}\",\n  \"response\": \"{{ JSON.stringify($json.text) }}\",\n  \"type\": \"content\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -895,7 +895,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "= https://ai-production-b4df.up.railway.app/callback",
+        "url": "=https://ai-production-b4df.up.railway.app/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -907,7 +907,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "= {\n     \"session_id\": \"{{$node['Webhook'].json.body.session_id}}\",\n     \"response\": \"{{ JSON.stringify($json.text) }}\",\n     \"type\": \"content\"\n   }",
+        "jsonBody": "={\n  \"session_id\": \"{{$node['Webhook'].json.body.session_id}}\",\n  \"response\": \"{{ JSON.stringify($json.text) }}\",\n  \"type\": \"content\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -918,6 +918,45 @@
       ],
       "id": "66e2e834-1d69-4b59-973f-2539b50835bd",
       "name": "HTTP Request2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        6224,
+        10704
+      ],
+      "id": "142b5942-7acf-4c88-b061-008acc360d93",
+      "name": "Wait",
+      "webhookId": "dd875279-e592-4996-b665-9606de4dbfc4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://ai-production-b4df.up.railway.app/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"session_id\": \"{{$node['Webhook'].json.body.session_id}}\",\n  \"response\": \"done\",\n  \"type\": \"complete\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        6400,
+        10704
+      ],
+      "id": "4c6c0d21-6a3e-4515-ab51-0a81571aab3b",
+      "name": "HTTP Request"
     }
   ],
   "pinData": {},
@@ -1279,13 +1318,35 @@
           }
         ]
       ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "23f1d76e-2c70-49f5-874f-9848542613c9",
+  "versionId": "9112a8a6-cc0d-462f-a7ed-aa39d92e017b",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "119cf2b683bc765fff6139b8962837117d16f9245da60ffc76ad274c5a2a52d5"

@@ -1,0 +1,1299 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=ALWAYS OUTPUT T nothing else. JUST T.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "OUTPUT L AND ONLY L IN YOUR RESPONSE. nothing else, just the letter L"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2304,
+        10352
+      ],
+      "id": "1b29938e-9659-43ff-8fcb-eede5838efab",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "sao10k/l3-lunaris-8b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        10576
+      ],
+      "id": "e75e89bd-2cfb-4623-957c-7c7effa0a468",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KbWRXQGkTgGzP9cF",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3af5e2cd-54a2-4669-83d0-beae27b091ea",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "L",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "ac8c649a-4d71-414f-ac34-901f0b104c81",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "M",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "1c1010d7-16de-4b26-9582-3ca8c50ec24c",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "H",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7ce0413b-89f6-4b78-86ae-5c9ec79603cc",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "T",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        2672,
+        10320
+      ],
+      "id": "ae54224c-ce55-4bae-ad01-2b1cff6feabf",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a concise, friendly assistant that acknowledges user statements. Your job is to:\n1. Briefly acknowledge what the user said\n2. Show you understood their point\n3. Gently prompt if they need anything else\n\nKeep responses under 20 words. Be natural and conversational.\n\nContext from conversation (if any): {conversation_context}\n\nRESPONSE PATTERNS:\n\nFor positive statements → Express appropriate positive acknowledgment\nFor informational statements → Confirm understanding  \nFor opinions → Acknowledge their perspective\nFor updates/FYI → Thank them and note it\n\nAlways end with a soft transition that invites further engagement if needed.\n\nUser statement: {{ $('Edit Fields').item.json.messageclean }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2896,
+        9760
+      ],
+      "id": "90f4a3b7-d6f1-4ac8-8eac-b0e7431bfb08",
+      "name": "Dumb AI"
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-3-8b-instruct",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2976,
+        9984
+      ],
+      "id": "798b2da9-aed2-4867-a1d2-f8b80bf7058c",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KbWRXQGkTgGzP9cF",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2976,
+        10384
+      ],
+      "id": "9a24cdda-7e69-4d73-b243-5a4993e982b8",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KbWRXQGkTgGzP9cF",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2976,
+        10784
+      ],
+      "id": "757c569a-813a-41ed-b359-5f64635764dc",
+      "name": "OpenRouter Chat Model3",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KbWRXQGkTgGzP9cF",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0bcd9cd7-c2a6-4ae5-9f84-db24327562fb",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        1872,
+        10352
+      ],
+      "id": "3d427dc5-9211-4d1d-96ec-73c7aad1674e",
+      "name": "Webhook",
+      "webhookId": "0bcd9cd7-c2a6-4ae5-9f84-db24327562fb"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"response\": $(\"Dumb AI\").item.json.text } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        3248,
+        9872
+      ],
+      "id": "10437495-88d3-4582-b9cf-5c5a7c7e38e0",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "61dc5247-5b57-43f7-b02d-de0966162126",
+              "name": "chat",
+              "value": "={{ $json.body.chat }}",
+              "type": "string"
+            },
+            {
+              "id": "299b0eff-86ca-431b-beef-cba32d629be0",
+              "name": "context",
+              "value": "={{ $json.body.chat_context }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2096,
+        10352
+      ],
+      "id": "f720910a-a93b-4a8d-8c8f-531f91dfdd47",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"response\": $(\"Dumb AI\").item.json.text } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        3248,
+        10272
+      ],
+      "id": "faa3b8d9-b458-4ec4-8447-93c24d1e76c1",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Edit Fields').item.json.messageclean }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2896,
+        10160
+      ],
+      "id": "1076c9b6-856e-4bf4-9d78-4cbd1130e613",
+      "name": "Normal AI"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Edit Fields').item.json.messageclean }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2896,
+        10560
+      ],
+      "id": "2730fb36-a6a5-4eae-82be-127b972e4807",
+      "name": "Smart AI"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are the Orchestrator AI. You are a specialized system that functions as a high-level execution planner. Your sole purpose is to receive a user's intent and convert it into a detailed, multi-step JSON workflow that is 100% compatible with the n8n expression engine.\n\nYou do not answer the user or generate final content. Your one and only job is to create the \"work order\" JSON that other AIs will execute to fulfill the user's request.\n\nPrimary Directive\nYour entire response must be a single, parsable JSON object. No other text, markdown, or explanation is permitted. Your response must always start with { and end with }.\n\nEvery user request, without exception, must be translated into a JSON workflow.\n\nCritical JSON String Rules: How to Write Prompts\nThis is the most common and critical failure point. You must follow these rules to prevent system errors.\n\nA JSON string is any value enclosed in quotation marks (\"...\").\n\nThe Single Line Rule: Every string value in your JSON output (especially the prompt field) MUST be written on a SINGLE LINE.\n\nUse \\n for Line Breaks: To create a line break inside the content of a string, you MUST use the two-character sequence \\n.\n\nDo Not Press Enter: Never press the Enter/Return key inside a string value. This inserts a literal newline character, which is invalid JSON and will cause a \"Bad control character\" error.\n\nEscape Special Characters:\n\nUse \\\" for any quotation marks that appear inside the string.\n\nUse \\\\ for any backslashes that appear inside the string.\n\nUse \\t for any tabs.\n\nHandling Variables in Workflows\nEach task can have up to 5 standardized input variables. These are always named \"variable_1\", \"variable_2\", etc. Only include the variables that are actually needed:\n\n\"variable_1\": true,\n\"variable_2\": true,\n\"variable_3\": true\n\nVariables must be used in strict sequential order with no gaps. Start with variable_1 and continue sequentially.\n\nOutput Variables:\n- For intermediate results, use \"variable_X\" format (variable_1, variable_2, etc.) in strict sequential order\n- NEVER skip numbers or use numbers higher than necessary\n- For the final output that will be sent to the user, ALWAYS use \"chat_variable\" format\n- The final_output_variable field must ALWAYS be set to \"chat_variable\"\n- THE LAST TASK THAT PRODUCES CONTENT MUST HAVE output_variable: \"chat_variable\"\n\nCRITICAL: Do NOT include variable references like {{ variable_1 }} inside your prompt text. The variables will be substituted automatically by n8n. Write your prompts as normal text that assumes the variables will be available, but don't explicitly reference them with {{ }} syntax.\n\nWorkflow Design Philosophy\nAlways Generate a Plan: Every request must result in a workflow.\n\nUse Parallelization (Linear): Use the linear task type when tasks are independent and can run at the same time (e.g., researching different sub-topics).\n\nUse Sequential Processing (Inline): Use the inline task type when a task depends on the output of a previous one (e.g., synthesizing research).\n\nWorkflow Structure\nThe basic structure of your output must be as follows:\n\n{\n  \"final_output_variable\": \"chat_variable\",\n  \"workflow\": [\n    {\n      \"type\": \"linear|inline\",\n      \"tasks\": [\n        {\n          \"model\": \"model_name\",\n          \"prompt\": \"Detailed task instructions, properly escaped with \\\\n for newlines. Do NOT include variable references with {{ }} syntax.\",\n          \"variable_1\": true,\n          \"variable_2\": true,\n          \"output_variable\": \"variable_3\",\n          \"config\": {\n            \"temperature\": 0.3,\n            \"max_tokens\": 2500,\n            \"addons\": [\"relevant\", \"addons\"]\n          }\n        },\n        {\n          \"model\": \"model_name\",\n          \"prompt\": \"Final task that produces the content to show the user.\",\n          \"variable_1\": true,\n          \"variable_2\": true,\n          \"variable_3\": true,\n          \"output_variable\": \"chat_variable\",\n          \"config\": {\n            \"temperature\": 0.4,\n            \"max_tokens\": 4000,\n            \"addons\": [\"writing\"]\n          }\n        }\n      ]\n    }\n  ]\n}\n\nField Definitions\nfinal_output_variable: (Required) The variable that holds the final user-facing deliverable. ALWAYS use \"chat_variable\" format for the final output that will be sent to the user.\n\ntype: (Required) linear (parallel) or inline (sequential).\n\nmodel: (Required) The AI model for the task.\n\nprompt: (Required) The instructions for the AI model. Must follow all string escaping rules. Do NOT include variable references with {{ }} syntax in the prompt.\n\nvariable_1 through variable_5: (Optional) Set to true to indicate which standardized variables this task needs to access. Only include the ones you need.\n\noutput_variable: (Required) This task's output variable. For intermediate results, use \"variable_X\" format. For the final output that will be sent to the user, ALWAYS use \"chat_variable\" format. The final content-producing task MUST use \"chat_variable\".\n\nconfig: (Required) A JSON object containing model parameters and addons.\n\nconfig.temperature: (Required) 0.2-0.4 for factual tasks, 0.7-1.0 for creative tasks.\n\nconfig.max_tokens: (Required) Number of tokens to generate.\n\nconfig.addons: (Required) A list of strings to enhance model focus.\n\nAvailable Models\nthinking_ai: For research, synthesis, analysis, and final content generation.\n\ncode_ai: For programming, debugging, and code generation.\n\nfast_ai: For quick processing, data formatting, or simple, single-step tasks.\n\nfinished_task_ai: ALWAYS use this as the last task. It announces completion.\n\nAvailable Addons\n[\"research\", \"historical\", \"academic\", \"technical\", \"creative\", \"writing\", \"military\", \"scientific\", \"medical\", \"legal\", \"financial\", \"cultural\", \"biographical\"]\n\nComplete Working Example (Fully Corrected)\nUser Message: \"Create a 2000-word document on World War 2\" Chat History: \"User previously asked about the Cold War.\"\n\n(Your output must be this JSON object and nothing else):\n\n{\n  \"final_output_variable\": \"chat_variable\",\n  \"workflow\": [\n    {\n      \"type\": \"linear\",\n      \"tasks\": [\n        {\n          \"model\": \"thinking_ai\",\n          \"prompt\": \"Research WWII origins and causes. Consider the user's previous interest in the Cold War. Cover: Treaty of Versailles impact, rise of fascism in Europe, Japanese expansionism, failure of League of Nations, appeasement policy. Provide comprehensive detail for an academic document.\",\n          \"variable_1\": true,\n          \"variable_2\": true,\n          \"output_variable\": \"variable_1\",\n          \"config\": {\n            \"temperature\": 0.3,\n            \"max_tokens\": 2500,\n            \"addons\": [\"research\", \"historical\", \"academic\"]\n          }\n        },\n        {\n          \"model\": \"thinking_ai\",\n          \"prompt\": \"Research major WWII military campaigns and battles. Include European Theater (Poland, France, Britain, USSR, D-Day), Pacific Theater (Pearl Harbor, Midway, Island Hopping), North African campaigns. Detail strategies, turning points, and outcomes.\",\n          \"output_variable\": \"variable_2\",\n          \"config\": {\n            \"temperature\": 0.3,\n            \"max_tokens\": 2500,\n            \"addons\": [\"research\", \"historical\", \"military\"]\n          }\n        },\n        {\n          \"model\": \"thinking_ai\",\n          \"prompt\": \"Research WWII conclusion, aftermath, and legacy. Include: atomic bombs, surrender processes, Nuremberg trials, UN formation, Cold War origins (connecting to the user's previous interest), decolonization, Marshall Plan, lasting geopolitical changes.\",\n          \"variable_2\": true,\n          \"output_variable\": \"variable_3\",\n          \"config\": {\n            \"temperature\": 0.3,\n            \"max_tokens\": 2500,\n            \"addons\": [\"research\", \"historical\", \"academic\"]\n          }\n        }\n      ]\n    },\n    {\n      \"type\": \"inline\",\n      \"tasks\": [\n        {\n          \"model\": \"thinking_ai\",\n          \"prompt\": \"Synthesize a comprehensive 2000-word academic document on World War II using the provided research. Structure:\\n1. Introduction (200 words)\\n2. Road to War (600 words) - Use the origins and causes research\\n3. The Global Conflict (800 words) - Use the campaigns and battles research\\n4. Aftermath & Legacy (300 words) - Use the conclusion research\\n5. Conclusion (100 words)\\nMaintain an academic tone, ensure smooth transitions between sections, and create a single, cohesive narrative.\",\n          \"variable_1\": true,\n          \"variable_2\": true,\n          \"variable_3\": true,\n          \"output_variable\": \"chat_variable\",\n          \"config\": {\n            \"temperature\": 0.4,\n            \"max_tokens\": 4000,\n            \"addons\": [\"writing\", \"academic\", \"historical\"]\n          }\n        }\n      ]\n    }\n  ]\n}\n\nIMPORTANT: Note how the variable numbering follows strict sequential order:\n1. First task outputs variable_1\n2. Second task outputs variable_2\n3. Third task outputs variable_3\n4. Fourth task (the final content task) outputs chat_variable directly\n\nAnother Complete Example (Cow Essay)\nUser Message: \"Write me a 1000-word essay about cows\"\n\n{\n  \"final_output_variable\": \"chat_variable\",\n  \"workflow\": [\n    {\n      \"type\": \"linear\",\n      \"tasks\": [\n        {\n          \"model\": \"thinking_ai\",\n          \"prompt\": \"Research the biology of cows. Include anatomical features, digestive system, reproduction, lifespan, and other relevant physiological aspects. Provide comprehensive, factual information suitable for an educational essay.\",\n          \"variable_1\": true,\n          \"output_variable\": \"variable_1\",\n          \"config\": {\n            \"temperature\": 0.3,\n            \"max_tokens\": 2500,\n            \"addons\": [\"research\", \"scientific\"]\n          }\n        },\n        {\n          \"model\": \"thinking_ai\",\n          \"prompt\": \"Research the cultural significance of cows. Cover historical importance, religious symbolism (especially in Hinduism), cultural representations, folklore, and traditions involving cows across different civilizations and time periods.\",\n          \"output_variable\": \"variable_2\",\n          \"config\": {\n            \"temperature\": 0.3,\n            \"max_tokens\": 2500,\n            \"addons\": [\"research\", \"cultural\", \"historical\"]\n          }\n        },\n        {\n          \"model\": \"thinking_ai\",\n          \"prompt\": \"Research the economic roles of cows. Include dairy production, meat industry, leather and other byproducts, use as draft animals, modern farming practices, and environmental impact of cattle raising. Provide factual, well-rounded information.\",\n          \"output_variable\": \"variable_3\",\n          \"config\": {\n            \"temperature\": 0.3,\n            \"max_tokens\": 2500,\n            \"addons\": [\"research\", \"financial\", \"academic\"]\n          }\n        }\n      ]\n    },\n    {\n      \"type\": \"inline\",\n      \"tasks\": [\n        {\n          \"model\": \"thinking_ai\",\n          \"prompt\": \"Compose a 1000-word essay about cows using the provided research. Structure:\\n1. Introduction (150 words) – introduce cows and their importance.\\n2. Biology (250 words) – summarize anatomical and physiological details.\\n3. Cultural Significance (300 words) – describe historical, religious, and cultural roles.\\n4. Economic Role (250 words) – outline dairy, meat, labor, and environmental aspects.\\n5. Conclusion (50 words) – wrap up with a reflective statement.\\nMaintain an engaging yet informative tone suitable for a general audience. Ensure smooth transitions between sections and avoid repetition.\",\n          \"variable_1\": true,\n          \"variable_2\": true,\n          \"variable_3\": true,\n          \"output_variable\": \"chat_variable\",\n          \"config\": {\n            \"temperature\": 0.4,\n            \"max_tokens\": 4000,\n            \"addons\": [\"writing\", \"academic\", \"cultural\"]\n          }\n        }\n      ]\n    }\n  ]\n}\n\nCRITICAL REMINDER: The last task that produces the actual content (essay, report, code, etc.) MUST use \"chat_variable\" as its output_variable name, not variable_X. The finished_task_ai step is optional - if you include it, it should also use \"chat_variable\".",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "={{ $('Edit Fields').item.json.chat }}  previous conversations (use for context): {{ $('Edit Fields').item.json.context }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        3072,
+        11424
+      ],
+      "id": "428219a7-938e-4cd1-89e2-8ad8b71153f8",
+      "name": "Smart AI1"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-3.5-sonnet",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        11488
+      ],
+      "id": "0e684b39-6659-46d6-97a0-a890d8a3f35d",
+      "name": "OpenRouter Chat Model4",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KbWRXQGkTgGzP9cF",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"response\": $(\"Dumb AI\").item.json.text } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        3248,
+        10672
+      ],
+      "id": "7efbcdef-d772-4da5-a8b4-e59ca54fb6ce",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the raw JSON string from OpenRouter ('Smart AI1')\nconst aiItem = $('Smart AI1').first();\nlet rawString = '';\n// Auto-detect common OpenRouter fields (from pinned output, adjust if needed)\nif (aiItem) {\n  rawString = aiItem.json.message?.content ||  // Standard OpenRouter API\n              aiItem.json.content ||\n              aiItem.json.text ||\n              aiItem.json.output ||\n              aiItem.json.response ||\n              aiItem.json.body ||\n              '';\n}\nif (!rawString || typeof rawString !== 'string') {\n  return [{ json: { workflow: [], error: 'No JSON string found. Check field paths or pin Smart AI1 output.' } }];\n}\n\n// --- UPDATED SECTION ---\n// First, check if the string begins with text that suggests it's an essay or other text content\n// rather than JSON data\nconst textContentIndicators = [\n  \"Here's\", \"Here is\", \"Essay\", \"Article\", \"Content\", \"Text\", \n  \"I've created\", \"I have created\", \"Below is\"\n];\n\n// If it looks like text content rather than JSON data, wrap it in a proper JSON structure\nif (textContentIndicators.some(indicator => rawString.trim().startsWith(indicator))) {\n  // It's clearly text content - wrap it in a workflow structure\n  const wrappedWorkflow = { \n    workflow: [],\n    content: rawString.trim() \n  };\n  return [{ json: wrappedWorkflow }];\n}\n\n// Otherwise continue with the original JSON parsing logic\nlet stringToParse = rawString.trim(); // Trim leading/trailing whitespace\n\n// Sometimes AI might output introductory text or markdown wrappers that hide the JSON.\n// We need to robustly extract the actual JSON block.\nlet jsonMatch = stringToParse.match(/```json\\n([\\s\\S]*?)\\n```/); // Match markdown code blocks\nif (jsonMatch && jsonMatch[1]) {\n    stringToParse = jsonMatch[1].trim();\n} else {\n    // Fallback: If no markdown block, try to find the first '{' and last '}'\n    const firstBrace = stringToParse.indexOf('{');\n    const lastBrace = stringToParse.lastIndexOf('}');\n    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {\n        stringToParse = stringToParse.substring(firstBrace, lastBrace + 1).trim();\n    } else if (firstBrace === -1) {\n        // If no JSON structure is found at all, treat as plain text\n        const wrappedWorkflow = { \n          workflow: [],\n          content: rawString.trim() \n        };\n        return [{ json: wrappedWorkflow }];\n    }\n}\n// --- END OF UPDATED SECTION ---\n\n// Parse to JSON object\nlet parsedWorkflow = { workflow: [] };\nlet errorMsg = null;\ntry {\n  // Directly parse the (potentially extracted) string.\n  parsedWorkflow = JSON.parse(stringToParse);\n} catch (error) {\n  // If JSON parsing fails, treat the content as plain text\n  return [{ \n    json: { \n      workflow: [], \n      content: rawString.trim(),\n      parseAttempted: true \n    } \n  }];\n}\n\n// Output: Parsed object (full workflow) or content wrapper\nreturn [{ json: parsedWorkflow }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3456,
+        11408
+      ],
+      "id": "a665bac7-777c-46aa-abd0-c40b7b78250c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Merge2').item.json.tasks[1].prompt }}{{ $('Merge2').item.json.tasks[2].prompt }}{{ $('Merge2').item.json.tasks[0].prompt }}  \n\nadditional info: {{ $json.prompt }}\n\nadditional info: {{ $execution.runIndex > 0 ? ($('Code in JavaScript2').item?.json?.combinedText || \"\") : \"\" }}\n\nIf applicable use and follow structure / facts\nif no info provided, ignore.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        5456,
+        10800
+      ],
+      "id": "ceb3920d-0874-40cc-a9dd-41dff91cf87b",
+      "name": "Smart AI2"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-safeguard-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        5456,
+        10944
+      ],
+      "id": "7930cac4-2079-453d-8022-7362a59ae6bd",
+      "name": "OpenRouter Chat Model5",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KbWRXQGkTgGzP9cF",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tasks[1].model }}{{ $json.tasks[2].model }}{{ $json.tasks[0].model }}",
+                    "rightValue": "=thinking_ai",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "3edda9d4-22a6-49b9-965d-91df927ebf8e"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "52f225b1-cd6a-4755-b781-30fef3dd3ce3",
+                    "leftValue": "=",
+                    "rightValue": "writing_ai",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0cc43893-3dbe-4ddf-89fe-7a8eb21c7191",
+                    "leftValue": "=",
+                    "rightValue": "research_ai",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c8d21621-8609-4458-9603-68213418e9ac",
+                    "leftValue": "=",
+                    "rightValue": "info_ai",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        4800,
+        10800
+      ],
+      "id": "9550e1fb-99d6-436c-9dbe-98e8c0fc58c4",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=tasks",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        5104,
+        10704
+      ],
+      "id": "ed5a1937-fe30-4c9a-8f62-3d2cacbc46a5",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d18920c4-f760-499b-b993-dd94e2ca8ae7",
+              "name": "tasks[2].model",
+              "value": "={{ $json.tasks[2].model }}",
+              "type": "string"
+            },
+            {
+              "id": "8acd75cc-9286-4146-9c55-9c5e3ef72451",
+              "name": "tasks[2].prompt",
+              "value": "={{ $json.tasks[2].prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "4d4f5088-32e0-40e3-98e4-c7e8a70cb596",
+              "name": "tasks[2].output_variable",
+              "value": "={{ $json.tasks[2].output_variable }}",
+              "type": "string"
+            },
+            {
+              "id": "7e2512fc-7985-41f8-a530-a122dde0f08c",
+              "name": "tasks[2].config",
+              "value": "={{ $json.tasks[2].config }}",
+              "type": "object"
+            },
+            {
+              "id": "e4783bed-1239-4453-9307-9344c05c6867",
+              "name": "tasks[2].variable_1",
+              "value": "={{ $json.tasks[2].variable_1 }}",
+              "type": "string"
+            },
+            {
+              "id": "06aca633-e200-45a4-807d-239aaee55fe7",
+              "name": "tasks[2].variable_2",
+              "value": "={{ $json.tasks[2].variable_2 }}",
+              "type": "string"
+            },
+            {
+              "id": "765be034-21d1-49b4-8c5f-66b15c549075",
+              "name": "tasks[2].variable_3",
+              "value": "={{ $json.tasks[2].variable_3 }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4352,
+        10704
+      ],
+      "id": "f5f65c20-d3b8-4924-bd8b-3f5fa69d5935",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        4576,
+        10832
+      ],
+      "id": "db7db395-ab3b-4f90-82a9-f26bec1cb53d",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        4128,
+        11072
+      ],
+      "id": "1b9300b0-e291-4c5f-9a58-2081534df0b3",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "workflow",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        3728,
+        11392
+      ],
+      "id": "4a5794fc-66ce-417b-873f-33f2ffae1096",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=When a user requests a task, respond with a concise acknowledgment that mentions your team handling it without specifying exact timeframes:\nResponse Guidelines:\n\nKeep to 1-2 short sentences\nReference a team or specialists working on the task\nUse vague timing terms only (shortly, soon, momentarily)\nNEVER specify exact times (hours, minutes, days)\nFocus only on acknowledgment, not task details\n\nExamples:\n\"I'll have my team work on your essay about cows right away. You'll see the results soon.\"\n\"Sending this request to my writing team now. They'll deliver your essay shortly.\"\n\"My specialists are on it. I'll share their work with you soon.\"\n\"Task received and assigned to my team. We'll have this back to you shortly.\"\nFormat:\n[Brief acknowledgment] + [Team reference] + [Vague timing term]\nThe response should create confidence that work is happening without making specific time commitments that could set unrealistic expectations.\n\nuser chat: {{ $('Edit Fields').item.json.chat }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2704,
+        10976
+      ],
+      "id": "18a80e1a-ffbd-4c7f-8f41-43d6274521c0",
+      "name": "Dumb AI1"
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-3-8b-instruct",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2784,
+        11200
+      ],
+      "id": "57e9ce19-6af7-445e-ae9b-13f17fafca18",
+      "name": "OpenRouter Chat Model6",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KbWRXQGkTgGzP9cF",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d18920c4-f760-499b-b993-dd94e2ca8ae7",
+              "name": "tasks[1].model",
+              "value": "={{ $json.tasks[1].model }}",
+              "type": "string"
+            },
+            {
+              "id": "4d4f5088-32e0-40e3-98e4-c7e8a70cb596",
+              "name": "tasks[1].prompt",
+              "value": "={{ $json.tasks[1].prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "2feda8e2-ca5a-44f2-85c6-b3ee0b26651a",
+              "name": "tasks[1].output_variable",
+              "value": "={{ $json.tasks[1].output_variable }}",
+              "type": "string"
+            },
+            {
+              "id": "7e2512fc-7985-41f8-a530-a122dde0f08c",
+              "name": "tasks[1].config",
+              "value": "={{ $json.tasks[1].config }}",
+              "type": "object"
+            },
+            {
+              "id": "6b6fff02-853e-43cb-b24f-6c69eb431fc3",
+              "name": "tasks[1].variable_1",
+              "value": "={{ $json.tasks[1].variable_1 }}",
+              "type": "string"
+            },
+            {
+              "id": "5620d1d2-effd-4fd7-828c-7adea4275435",
+              "name": "tasks[1].variable_2",
+              "value": "={{ $json.tasks[1].variable_2 }}",
+              "type": "string"
+            },
+            {
+              "id": "98320e21-645d-4544-a1d9-4d19c0906469",
+              "name": "tasks[1].variable_3",
+              "value": "={{ $json.tasks[1].variable_3 }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4352,
+        10832
+      ],
+      "id": "833c202e-925a-4d0d-9827-0b6eb6dbef29",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d18920c4-f760-499b-b993-dd94e2ca8ae7",
+              "name": "tasks[0].model",
+              "value": "={{ $json.tasks[0].model }}",
+              "type": "string"
+            },
+            {
+              "id": "8acd75cc-9286-4146-9c55-9c5e3ef72451",
+              "name": "tasks[0].prompt",
+              "value": "={{ $json.tasks[0].prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "4d4f5088-32e0-40e3-98e4-c7e8a70cb596",
+              "name": "tasks[0].output_variable",
+              "value": "={{ $json.tasks[0].output_variable }}",
+              "type": "string"
+            },
+            {
+              "id": "7e2512fc-7985-41f8-a530-a122dde0f08c",
+              "name": "tasks[0].config",
+              "value": "={{ $json.tasks[0].config }}",
+              "type": "object"
+            },
+            {
+              "id": "512626dc-1bcf-486e-b60a-8f5ee024621b",
+              "name": "tasks[0].variable_1",
+              "value": "={{ $json.tasks[0].variable_1 }}",
+              "type": "string"
+            },
+            {
+              "id": "3bb940c3-7c64-40c0-9515-611888795344",
+              "name": "tasks[0].variable_2",
+              "value": "={{ $json.tasks[0].variable_2 }}",
+              "type": "string"
+            },
+            {
+              "id": "aa7b7a33-b215-4ad1-9c40-583573f3fd63",
+              "name": "tasks[0].variable_3",
+              "value": "={{ $json.tasks[0].variable_3 }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4352,
+        10960
+      ],
+      "id": "f0657798-dbca-498e-9d6c-8d6f39afbac2",
+      "name": "Edit Fields6"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all input items\nconst items = $input.all();\nlet combinedText = \"\";\nlet aiOutput = \"\";\n\n// Loop through all items\nfor (let i = 0; i < items.length; i++) {\n  // Get the AI output text from each item\n  if (items[i].json && items[i].json.text) {\n    aiOutput = items[i].json.text;\n    \n    // Add separator if not the first entry\n    if (combinedText && aiOutput) {\n      combinedText += \"\\n\\n\\n\\n\";  // Double line break\n    }\n    \n    // Add the output\n    combinedText += aiOutput;\n  }\n}\n\n// Return the combined text\nreturn {\n  json: {\n    combinedText: combinedText,\n    itemCount: items.length\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6224,
+        10880
+      ],
+      "id": "98d1891d-8b24-409d-ad09-b315af30c59e",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ff2fc684-b460-4751-a5cc-d974b8cded67",
+              "leftValue": "={{ $('Split Out1').item.json.output_variable }}",
+              "rightValue": "chat_variable",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5792,
+        10800
+      ],
+      "id": "c8a1b17a-87a0-4e14-bef5-84caec38ac0c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "= https://your-railway-app.railway.app/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Bearer",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzYmtzbWF5dHNmY29hYWZ0Zm9qIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjA1NTM1MywiZXhwIjoyMDc3NjMxMzUzfQ.p93pGr8T2roUL9Zptu1DtEGMC6arExCCVwCTWUKCW_Q"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "= {\n     \"session_id\": \"{{$node['Webhook'].json.body.session_id}}\",\n     \"response\": \"{{ JSON.stringify($json.text) }}\"\n   }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2960,
+        11088
+      ],
+      "id": "95a265e6-5ab2-442b-b2bd-6dcc73cf34e5",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "= https://your-railway-app.railway.app/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "= {\n     \"session_id\": \"{{$node['Webhook'].json.body.session_id}}\",\n     \"response\": \"{{ JSON.stringify($json.text) }}\"\n   }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        6016,
+        10704
+      ],
+      "id": "66e2e834-1d69-4b59-973f-2539b50835bd",
+      "name": "HTTP Request2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Dumb AI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normal AI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Smart AI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Dumb AI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Dumb AI",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Normal AI",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Smart AI",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dumb AI": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normal AI": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Smart AI1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Smart AI": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Smart AI1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Smart AI2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Smart AI2": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Smart AI2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dumb AI1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Dumb AI1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields6": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Smart AI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "23f1d76e-2c70-49f5-874f-9848542613c9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "119cf2b683bc765fff6139b8962837117d16f9245da60ffc76ad274c5a2a52d5"
+  },
+  "id": "QiIsCIm4D1h94O9O",
+  "tags": []
+}

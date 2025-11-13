@@ -111,66 +111,88 @@ app.get('/health', (req, res) => {
 
 // SSE Stream Endpoint
 app.get('/stream', (req, res) => {
-  const userId = req.query.userId || 'anonymous';
-  const sessionId = generateSessionId(userId);
-  const origin = req.get('origin') || req.get('referer') || 'unknown';
+  try {
+    const userId = req.query.userId || 'anonymous';
+    const sessionId = generateSessionId(userId);
+    const origin = req.get('origin') || req.get('referer') || 'unknown';
 
-  log(`New SSE connection request`, {
-    userId,
-    sessionId,
-    origin,
-    userAgent: req.get('user-agent')
-  });
+    log(`New SSE connection request`, {
+      userId,
+      sessionId,
+      origin,
+      userAgent: req.get('user-agent')
+    });
 
-  // Set SSE headers
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
-  // Send session ID to client
-  res.write(`data: ${JSON.stringify({ type: 'session', sessionId })}\n\n`);
+    log(`SSE headers set for session ${sessionId}`);
 
-  // Set up timeout
-  const timeout = setTimeout(() => {
-    log(`Session timeout`, { sessionId });
-    res.write(`data: ${JSON.stringify({ type: 'timeout', message: 'Connection timeout' })}\n\n`);
-    res.end();
-    cleanupSession(sessionId);
-  }, STREAM_TIMEOUT_MS);
+    // Send session ID to client
+    res.write(`data: ${JSON.stringify({ type: 'session', sessionId })}\n\n`);
+    res.flushHeaders();
 
-  // Store connection
-  activeConnections.set(sessionId, {
-    response: res,
-    userId,
-    timeout,
-    createdAt: Date.now()
-  });
+    log(`Initial session data sent for ${sessionId}`);
 
-  log(`Active connection stored`, {
-    sessionId,
-    totalConnections: activeConnections.size
-  });
+    // Set up timeout
+    const timeout = setTimeout(() => {
+      log(`Session timeout`, { sessionId });
+      res.write(`data: ${JSON.stringify({ type: 'timeout', message: 'Connection timeout' })}\n\n`);
+      res.end();
+      cleanupSession(sessionId);
+    }, STREAM_TIMEOUT_MS);
 
-  // Handle client disconnect
-  req.on('close', () => {
-    log(`Client disconnected`, { sessionId });
-    cleanupSession(sessionId);
-  });
+    // Store connection
+    activeConnections.set(sessionId, {
+      response: res,
+      userId,
+      timeout,
+      createdAt: Date.now()
+    });
 
-  // Send keepalive every 30 seconds
-  const keepaliveInterval = setInterval(() => {
-    if (activeConnections.has(sessionId)) {
-      res.write(`:keepalive\n\n`);
-    } else {
+    log(`Active connection stored`, {
+      sessionId,
+      totalConnections: activeConnections.size
+    });
+
+    // Handle client disconnect
+    req.on('close', () => {
+      log(`Client disconnected`, { sessionId });
+      cleanupSession(sessionId);
+    });
+
+    // Send keepalive every 30 seconds
+    const keepaliveInterval = setInterval(() => {
+      if (activeConnections.has(sessionId)) {
+        res.write(`:keepalive\n\n`);
+      } else {
+        clearInterval(keepaliveInterval);
+      }
+    }, 30000);
+
+    // Clean up interval on disconnect
+    req.on('close', () => {
       clearInterval(keepaliveInterval);
-    }
-  }, 30000);
+    });
 
-  // Clean up interval on disconnect
-  req.on('close', () => {
-    clearInterval(keepaliveInterval);
-  });
+  } catch (error) {
+    log(`Error in /stream endpoint`, {
+      error: error.message,
+      stack: error.stack
+    });
+
+    try {
+      res.status(500).json({
+        error: 'Failed to establish stream',
+        details: error.message
+      });
+    } catch (resError) {
+      log(`Failed to send error response`, { error: resError.message });
+    }
+  }
 });
 
 // Chat Endpoint - Forward messages to n8n
@@ -383,7 +405,7 @@ app.use((req, res) => {
 });
 
 // Start server - Listen on 0.0.0.0 for Railway compatibility
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   log(`n8n Streaming Bridge Server started`, {
     port: PORT,
     host: '0.0.0.0',
@@ -395,6 +417,16 @@ app.listen(PORT, '0.0.0.0', () => {
   if (!N8N_WEBHOOK_URL) {
     log('WARNING: N8N_WEBHOOK_URL is not configured. Set it in your .env file.');
   }
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  log('Server error', {
+    error: error.message,
+    code: error.code,
+    stack: error.stack
+  });
+  process.exit(1);
 });
 
 // Graceful shutdown
@@ -428,4 +460,22 @@ process.on('SIGINT', () => {
   });
 
   process.exit(0);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  log('UNCAUGHT EXCEPTION - Server will exit', {
+    error: error.message,
+    stack: error.stack
+  });
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  log('UNHANDLED PROMISE REJECTION - Server will exit', {
+    reason: reason,
+    promise: promise
+  });
+  process.exit(1);
 });

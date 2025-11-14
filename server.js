@@ -18,8 +18,9 @@ const app = express();
 console.log('✓ Express app created');
 
 const PORT = process.env.PORT || 3000;
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
-const STREAM_TIMEOUT_MS = process.env.STREAM_TIMEOUT_MS || 120000; // 2 minutes default
+// Hardcoded for Railway deployment - Railway env vars not being passed correctly
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://sanctumpcs.app.n8n.cloud/webhook/0bcd9cd7-c2a6-4ae5-9f84-db24327562fb';
+const STREAM_TIMEOUT_MS = process.env.STREAM_TIMEOUT_MS || 6000000; // 100 minutes (6000000ms)
 
 console.log('Configuration:', {
   PORT,

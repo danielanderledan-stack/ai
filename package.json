@@ -4,8 +4,8 @@
   "description": "A streaming bridge application for n8n webhooks using Server-Sent Events",
   "main": "server.js",
   "scripts": {
-    "start": "node sse-test.js",
-    "start:prod": "node server.js",
+    "start": "node server.js",
+    "start:sse": "node sse-test.js",
     "start:minimal": "node minimal-express.js",
     "start:debug": "node debug-server.js",
     "start:test": "node test-startup.js",

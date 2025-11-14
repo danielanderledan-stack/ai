@@ -4,7 +4,8 @@
   "description": "A streaming bridge application for n8n webhooks using Server-Sent Events",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node debug-server.js",
+    "start:prod": "node server.js",
     "dev": "node --watch server.js",
     "test": "node test.js"
   },

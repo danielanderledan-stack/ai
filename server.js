@@ -1,14 +1,33 @@
+console.log('=== STARTING N8N STREAMING BRIDGE ===');
+console.log('Time:', new Date().toISOString());
+console.log('Node:', process.version);
+
+console.log('Loading dotenv...');
 require('dotenv').config();
+console.log('✓ dotenv loaded');
+
+console.log('Loading dependencies...');
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
+console.log('✓ All dependencies loaded');
 
+console.log('Creating Express app...');
 const app = express();
+console.log('✓ Express app created');
+
 const PORT = process.env.PORT || 3000;
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
 const STREAM_TIMEOUT_MS = process.env.STREAM_TIMEOUT_MS || 120000; // 2 minutes default
 
+console.log('Configuration:', {
+  PORT,
+  N8N_WEBHOOK_URL: N8N_WEBHOOK_URL ? 'SET' : 'NOT SET',
+  STREAM_TIMEOUT_MS
+});
+
+console.log('Configuring CORS...');
 // CORS Configuration - Allow Figma site and localhost
 app.use(cors({
   origin: ['https://pod-chroma-42458729.figma.site', 'http://localhost:3000', 'http://127.0.0.1:3000'],
@@ -16,8 +35,11 @@ app.use(cors({
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type']
 }));
+console.log('✓ CORS configured');
 
+console.log('Configuring JSON parser...');
 app.use(express.json());
+console.log('✓ JSON parser configured');
 
 // Simple rate limiting store
 const rateLimitStore = new Map();
@@ -382,6 +404,7 @@ app.post('/callback', (req, res) => {
   }
 });
 
+console.log('Configuring error handlers...');
 // Error handling middleware
 app.use((err, req, res, next) => {
   log(`Unhandled error`, {
@@ -403,6 +426,12 @@ app.use((req, res) => {
     path: req.path
   });
 });
+console.log('✓ Error handlers configured');
+
+console.log('=== ALL ROUTES AND MIDDLEWARE CONFIGURED ===');
+console.log('Attempting to start server...');
+console.log('Port:', PORT);
+console.log('Host: 0.0.0.0');
 
 // Start server - Listen on 0.0.0.0 for Railway compatibility
 const server = app.listen(PORT, '0.0.0.0', () => {

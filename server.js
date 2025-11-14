@@ -41,52 +41,56 @@ console.log('Configuring JSON parser...');
 app.use(express.json());
 console.log('✓ JSON parser configured');
 
+console.log('Rate limiting: DISABLED for Railway debugging');
+// Rate limiting temporarily disabled to isolate deployment issue
+// TODO: Re-enable once server is stable
+
 // Simple rate limiting store
-const rateLimitStore = new Map();
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 60; // 60 requests per minute per IP
+// const rateLimitStore = new Map();
+// const RATE_LIMIT_WINDOW = 60000; // 1 minute
+// const RATE_LIMIT_MAX_REQUESTS = 60; // 60 requests per minute per IP
 
 // Rate limiting middleware
-const rateLimit = (req, res, next) => {
-  const ip = req.ip || req.connection.remoteAddress;
-  const now = Date.now();
+// const rateLimit = (req, res, next) => {
+//   const ip = req.ip || req.connection.remoteAddress;
+//   const now = Date.now();
 
-  if (!rateLimitStore.has(ip)) {
-    rateLimitStore.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-    return next();
-  }
+//   if (!rateLimitStore.has(ip)) {
+//     rateLimitStore.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+//     return next();
+//   }
 
-  const record = rateLimitStore.get(ip);
+//   const record = rateLimitStore.get(ip);
 
-  if (now > record.resetTime) {
-    record.count = 1;
-    record.resetTime = now + RATE_LIMIT_WINDOW;
-    return next();
-  }
+//   if (now > record.resetTime) {
+//     record.count = 1;
+//     record.resetTime = now + RATE_LIMIT_WINDOW;
+//     return next();
+//   }
 
-  if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
-    log(`Rate limit exceeded`, { ip });
-    return res.status(429).json({
-      error: 'Too many requests. Please try again later.'
-    });
-  }
+//   if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
+//     log(`Rate limit exceeded`, { ip });
+//     return res.status(429).json({
+//       error: 'Too many requests. Please try again later.'
+//     });
+//   }
 
-  record.count++;
-  next();
-};
+//   record.count++;
+//   next();
+// };
 
 // Apply rate limiting to all routes
-app.use(rateLimit);
+// app.use(rateLimit);
 
 // Clean up rate limit store periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, record] of rateLimitStore.entries()) {
-    if (now > record.resetTime) {
-      rateLimitStore.delete(ip);
-    }
-  }
-}, RATE_LIMIT_WINDOW);
+// setInterval(() => {
+//   const now = Date.now();
+//   for (const [ip, record] of rateLimitStore.entries()) {
+//     if (now > record.resetTime) {
+//       rateLimitStore.delete(ip);
+//     }
+//   }
+// }, RATE_LIMIT_WINDOW);
 
 // In-memory store for active SSE connections
 const activeConnections = new Map();

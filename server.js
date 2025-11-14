@@ -126,7 +126,24 @@ app.get('/health', (req, res) => {
     config: {
       port: PORT,
       n8nConfigured: !!N8N_WEBHOOK_URL,
+      n8nWebhookUrl: N8N_WEBHOOK_URL ? N8N_WEBHOOK_URL.substring(0, 50) + '...' : 'NOT SET',
       streamTimeout: STREAM_TIMEOUT_MS
+    }
+  });
+});
+
+// Debug endpoint to check environment variables
+app.get('/debug/env', (req, res) => {
+  res.json({
+    timestamp: new Date().toISOString(),
+    node: process.version,
+    env: {
+      PORT: process.env.PORT,
+      N8N_WEBHOOK_URL: process.env.N8N_WEBHOOK_URL ? 'SET (length: ' + process.env.N8N_WEBHOOK_URL.length + ')' : 'NOT SET',
+      STREAM_TIMEOUT_MS: process.env.STREAM_TIMEOUT_MS,
+      NODE_ENV: process.env.NODE_ENV,
+      // Show all env var names (not values) for debugging
+      allEnvVars: Object.keys(process.env).filter(k => !k.includes('SECRET') && !k.includes('KEY') && !k.includes('TOKEN')).sort()
     }
   });
 });
@@ -249,9 +266,10 @@ app.post('/chat', async (req, res) => {
 
   // Verify n8n webhook URL is configured
   if (!N8N_WEBHOOK_URL) {
-    log(`N8N_WEBHOOK_URL not configured`);
-    return res.status(500).json({
-      error: 'Server configuration error: N8N webhook URL not configured'
+    log(`N8N_WEBHOOK_URL not configured - cannot forward to n8n`);
+    return res.status(503).json({
+      error: 'N8N_WEBHOOK_URL environment variable not configured in Railway',
+      message: 'Please set N8N_WEBHOOK_URL in Railway dashboard under Variables tab'
     });
   }
 
